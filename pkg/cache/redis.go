@@ -23,7 +23,7 @@ func (r *redisCache) Get(key string) (any, error) {
 		return nil, err
 	}
 
-	var result interface{}
+	var result any
 	err = json.Unmarshal([]byte(str), &result)
 	if err != nil {
 		return nil, err
