@@ -73,7 +73,7 @@ func (ctrl *Controller[E]) UpsertOne(c *gin.Context) {
 		hook(entity, c)
 	}
 
-	err := ctrl.repository.UpsertOne(c.Request.Context(), entity)
+	err := ctrl.repository.UpsertOne(c, entity)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to save %v record, try again in a bit", ctrl.name), 500)
@@ -117,7 +117,7 @@ func (ctrl *Controller[E]) UpsertMany(c *gin.Context) {
 		}
 	}
 
-	err := ctrl.repository.UpsertMany(c.Request.Context(), entities...)
+	err := ctrl.repository.UpsertMany(c, entities...)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to save %v records, try again in a bit", ctrl.name), 500)
@@ -165,7 +165,7 @@ func (ctrl *Controller[E]) CreateOne(c *gin.Context) {
 
 	if ctrl.unique != nil {
 		query, args := ctrl.unique(entity)
-		existing, err := ctrl.repository.Count(c.Request.Context(), query, args...)
+		existing, err := ctrl.repository.Count(c, query, args...)
 		if err != nil {
 			log.Println(err)
 			ctrl.Error(c, "Something went wrong, check and try again")
@@ -183,7 +183,7 @@ func (ctrl *Controller[E]) CreateOne(c *gin.Context) {
 		hook(entity, c)
 	}
 
-	err := ctrl.repository.CreateOne(c.Request.Context(), entity)
+	err := ctrl.repository.CreateOne(c, entity)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to save %v record, try again in a bit", ctrl.name), 500)
@@ -224,7 +224,7 @@ func (ctrl *Controller[E]) CreateMany(c *gin.Context) {
 	if ctrl.unique != nil {
 		for _, entity := range entities {
 			query, args := ctrl.unique(&entity)
-			existing, err := ctrl.repository.Count(c.Request.Context(), query, args...)
+			existing, err := ctrl.repository.Count(c, query, args...)
 			if err != nil {
 				log.Println(err)
 				ctrl.Error(c, "Something went wrong, check and try again")
@@ -245,7 +245,7 @@ func (ctrl *Controller[E]) CreateMany(c *gin.Context) {
 		}
 	}
 
-	err := ctrl.repository.CreateMany(c.Request.Context(), entities...)
+	err := ctrl.repository.CreateMany(c, entities...)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to save %v records, try again in a bit", ctrl.name), 500)
@@ -282,7 +282,7 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 		return
 	}
 
-	existingEntity, err := ctrl.repository.FindOne(c.Request.Context(), id)
+	existingEntity, err := ctrl.repository.FindOne(c, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Println(err)
@@ -302,7 +302,7 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 	if ctrl.unique != nil {
 		query, args := ctrl.unique(entity)
 		var existing int64
-		err := ctrl.repository.DB().WithContext(c.Request.Context()).Where(query, args...).Where("id != ?", id).Model(entity).Count(&existing).Error
+		err := ctrl.repository.SQL(c).WithContext(c).Where(query, args...).Where("id != ?", id).Model(entity).Count(&existing).Error
 		if err != nil {
 			log.Println(err)
 			ctrl.Error(c, "Something went wrong, check and try again")
@@ -320,7 +320,7 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 		hook(entity, c)
 	}
 
-	err = ctrl.repository.UpdateOne(c.Request.Context(), id, entity)
+	err = ctrl.repository.UpdateOne(c, id, entity)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to update %v record, try again in a bit", ctrl.name), 500)
@@ -358,7 +358,7 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 	ids := strings.Split(id, ",")
 	var entities []E
 	for _, _ = range ids {
-		existingEntity, err := ctrl.repository.FindOne(c.Request.Context(), id)
+		existingEntity, err := ctrl.repository.FindOne(c, id)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				log.Println(err)
@@ -380,7 +380,7 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 		for _, id := range ids {
 			query, args := ctrl.unique(entity)
 			var existing int64
-			err := ctrl.repository.DB().WithContext(c.Request.Context()).Where(query, args...).Where("id != ?", id).Model(entity).Count(&existing).Error
+			err := ctrl.repository.SQL(c).WithContext(c).Where(query, args...).Where("id != ?", id).Model(entity).Count(&existing).Error
 			if err != nil {
 				log.Println(err)
 				ctrl.Error(c, "Something went wrong, check and try again")
@@ -401,7 +401,7 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 		}
 	}
 
-	err := ctrl.repository.UpdateMany(c.Request.Context(), entity, "id IN ?", strings.Split(id, ","))
+	err := ctrl.repository.UpdateMany(c, entity, "id IN ?", strings.Split(id, ","))
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to update %v record, try again in a bit", ctrl.name), 500)
@@ -419,7 +419,7 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 
 func (ctrl *Controller[E]) FindOne(c *gin.Context) {
 	id := c.Param("id")
-	entity, err := ctrl.repository.FindOne(c.Request.Context(), id)
+	entity, err := ctrl.repository.FindOne(c, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Println(err)
@@ -481,7 +481,7 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 	}
 
 	offset := (page - 1) * perPage
-	entities, err := ctrl.repository.FindManyWithLimit(c.Request.Context(), perPage, offset, nil)
+	entities, err := ctrl.repository.FindManyWithLimit(c, perPage, offset, nil)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to retrieve %v record, try again in a bit", ctrl.name), 500)
@@ -494,7 +494,7 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 func (ctrl *Controller[E]) DeleteOne(c *gin.Context) {
 	id := c.Param("id")
 
-	entity, err := ctrl.repository.FindOne(c.Request.Context(), id)
+	entity, err := ctrl.repository.FindOne(c, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Println(err)
@@ -511,7 +511,7 @@ func (ctrl *Controller[E]) DeleteOne(c *gin.Context) {
 		hook(&entity, c)
 	}
 
-	err = ctrl.repository.DeleteOne(c.Request.Context(), id)
+	err = ctrl.repository.DeleteOne(c, id)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to remove %v record, try again in a bit", ctrl.name), 500)
@@ -531,7 +531,7 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 	ids := strings.Split(id, ",")
 	var entities []E
 	for _, _ = range ids {
-		entity, err := ctrl.repository.FindOne(c.Request.Context(), id)
+		entity, err := ctrl.repository.FindOne(c, id)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				log.Println(err)
@@ -553,7 +553,7 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 		}
 	}
 
-	err := ctrl.repository.DeleteMany(c.Request.Context(), "id IN ?", ids)
+	err := ctrl.repository.DeleteMany(c, "id IN ?", ids)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to remove %v record, try again in a bit", ctrl.name), 500)

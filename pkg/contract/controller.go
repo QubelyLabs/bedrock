@@ -3,12 +3,12 @@ package contract
 import "github.com/gin-gonic/gin"
 
 type Controller interface {
-	CreateOne(c *gin.Context)
-	CreateMany(c *gin.Context)
-	UpdateOne(c *gin.Context)
-	UpdateMany(c *gin.Context)
-	FindOne(c *gin.Context)
-	FindMany(c *gin.Context)
-	DeleteOne(c *gin.Context)
-	DeleteMany(c *gin.Context)
+	CreateOne(*gin.Context)
+	CreateMany(*gin.Context)
+	UpdateOne(*gin.Context)
+	UpdateMany(*gin.Context)
+	FindOne(*gin.Context)
+	FindMany(*gin.Context)
+	DeleteOne(*gin.Context)
+	DeleteMany(*gin.Context)
 }
