@@ -22,6 +22,7 @@ const (
 )
 
 type Controller[E any] struct {
+	*BaseController
 	repository contract.Repository[E]
 	name       string
 	plural     string
@@ -40,7 +41,7 @@ func NewController[E any](
 	morph func(*E),
 	hooks map[string]func(*E, *gin.Context),
 ) *Controller[E] {
-	return &Controller[E]{repository, name, plural, searchable, unique, morph, hooks}
+	return &Controller[E]{&BaseController{}, repository, name, plural, searchable, unique, morph, hooks}
 }
 
 // TODO
@@ -568,48 +569,3 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 
 	ctrl.Success(c, fmt.Sprintf("%v records removed successfully", ctrl.name), nil)
 }
-
-func (ctrl *Controller[E]) Success(c *gin.Context, message string, data any) {
-	c.JSON(200, gin.H{
-		"status":  true,
-		"message": message,
-		"data":    data,
-	})
-}
-
-func (ctrl *Controller[E]) Error(c *gin.Context, message string) {
-	c.JSON(400, gin.H{
-		"status":  false,
-		"message": message,
-	})
-}
-
-func (ctrl *Controller[E]) ErrorWithData(c *gin.Context, message string, data any) {
-	c.JSON(400, gin.H{
-		"status":  false,
-		"message": message,
-		"data":    data,
-	})
-}
-
-func (ctrl *Controller[E]) ErrorWithCode(c *gin.Context, message string, code int) {
-	c.JSON(400, gin.H{
-		"status":  false,
-		"message": message,
-	})
-}
-
-func (ctrl *Controller[E]) ErrorWithDataAndCode(c *gin.Context, message string, data any, code int) {
-	if code == 0 {
-		code = 400
-	}
-
-	c.JSON(code, gin.H{
-		"status":  false,
-		"message": message,
-		"data":    data,
-	})
-}
-
-// TODO
-// metrics, relatives
