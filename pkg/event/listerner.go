@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -15,7 +14,7 @@ const (
 
 var (
 	events    = make(chan Event, BUFFER_LIMIT)
-	listeners = map[string]Listener{}
+	listeners = []Listener{}
 	mutex     = &sync.Mutex{}
 )
 
@@ -29,43 +28,51 @@ func StartListener() error {
 			return nil
 		}
 
-		// Check if a listener exists for the event name
-		listener, ok := listeners[event.Name]
-		if !ok {
-			fmt.Printf("No listener found for event: %s\n", event.Name)
-			continue
-		}
-
-		var err error
-		for i := 0; i < RETRY_COUNT; i++ {
-			err = listener(event.Payload...)
-			if err == nil {
-				break
+		var wg sync.WaitGroup
+		wg.Add(len(listeners))
+		for _, listener := range listeners {
+			if listener.Name == event.Name {
+				go func(l Listener, e Event) {
+					defer wg.Done()
+					var err error
+					for i := 0; i < RETRY_COUNT; i++ {
+						err = l.Handler(e.Payload...)
+						if err == nil {
+							break
+						}
+						log.Printf("Error processing event %s (listener %s, attempt %d): %v", event.Name, l.Name, i+1, err)
+						time.Sleep(RETRY_DELAY)
+					}
+					if err != nil {
+						log.Printf("Failed to process event %s for listener %s after %d retries: %v", event.Name, l.Name, RETRY_COUNT, err)
+					}
+				}(listener, event)
 			}
-			log.Printf("Error processing event %s (attempt %d): %v", event.Name, i+1, err)
-			time.Sleep(RETRY_DELAY)
 		}
-
-		if err != nil {
-			log.Printf("Failed to process event %s after %d retries: %v", event.Name, RETRY_COUNT, err)
-		}
+		wg.Wait()
 	}
 }
 
 // RegisterListener registers a listener function for a specific event name
-func RegisterListener(name string, listener Listener) error {
+func RegisterListener(listener Listener) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	listeners[name] = listener
+	listeners = append(listeners, listener)
 	return nil
 }
 
-// UnregisterListener removes a listener function for a specific event name
+// UnregisterListener removes a listener function based on its name
 func UnregisterListener(name string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	delete(listeners, name)
+	newList := make([]Listener, 0, len(listeners))
+	for _, listener := range listeners {
+		if listener.Name != name {
+			newList = append(newList, listener)
+		}
+	}
+	listeners = newList
 	return nil
 }

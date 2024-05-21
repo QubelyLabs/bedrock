@@ -5,4 +5,7 @@ type Event struct {
 	Payload []any
 }
 
-type Listener = func(...any) error
+type Listener struct {
+	Name    string
+	Handler func(...any) error
+}
