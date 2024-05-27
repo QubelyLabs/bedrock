@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qubelylabs/bedrock/pkg/db"
+	"github.com/qubelylabs/bedrock/pkg/injection"
 	"gorm.io/gorm"
 )
 
@@ -19,7 +19,7 @@ func Transaction(d *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		db.SetSQLToContext(c, tx)
+		injection.SetSQL(c, tx)
 
 		defer func() {
 			if err := recover(); err != nil {

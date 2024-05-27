@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/qubelylabs/bedrock/pkg/request"
+	"github.com/qubelylabs/bedrock/pkg/util"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 // It also caches the request for 10mins
 func Enquiry(userId, workspaceId string) (bool, error) {
 	url := fmt.Sprintf("%v/enquiry", baseUrl)
-	payload := map[string]any{
+	payload := util.Object{
 		"userId":      userId,
 		"workspaceId": workspaceId,
 	}

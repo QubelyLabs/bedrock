@@ -2,14 +2,21 @@ package util
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"log"
+	"math/rand"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Get attempts to retrieve a value from a KVStore and assert it to a specific type
-func GetFromMap[T any](m map[string]any, key string) T {
+func GetFromMap[T any](m Object, key string) T {
 	value, ok := m[key].(T)
 	if !ok {
 		return *new(T)
@@ -19,12 +26,12 @@ func GetFromMap[T any](m map[string]any, key string) T {
 }
 
 // SetToMap attempts to store a value in a KVStore
-func SetToMap[T any](m map[string]any, key string, value T) {
+func SetToMap[T any](m Object, key string, value T) {
 	m[key] = value
 }
 
 // RemoveFromMap removes a key-value pair from a KVStore
-func RemoveFromMap(m map[string]any, key string) {
+func RemoveFromMap(m Object, key string) {
 	delete(m, key)
 }
 
@@ -89,4 +96,50 @@ func ConsistentHash(str string) string {
 	hasher := sha256.New()
 	hasher.Write([]byte(str))
 	return fmt.Sprintf("%x", hasher.Sum(nil))
+}
+
+func Hash(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func VerifyHash(hashed, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password))
+	return err == nil
+}
+
+func Random(len int) string {
+	num := make([]string, len)
+	for i := 0; i <= len-1; i++ {
+		num[i] = strconv.Itoa(rand.Intn(9))
+	}
+	return strings.Join(num, "")
+}
+
+func ToBase64(data Object) string {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+
+	base64String := base64.StdEncoding.EncodeToString(jsonData)
+
+	return base64String
+}
+
+func FromBase64(str string) Object {
+	jsonData, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	// Unmarshal the JSON bytes to a map[string]any
+	var data map[string]any
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		return nil
+	}
+
+	return data
 }

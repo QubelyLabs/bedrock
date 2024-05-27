@@ -2,20 +2,23 @@ package request
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
+
+	"github.com/qubelylabs/bedrock/pkg/util"
 )
 
 // HttpResponse represents the response structure
 type HttpResponse struct {
-	Status     bool   `json:"status"`
-	StatusCode int    `json:"status_code"`
-	StatusText string `json:"status_text"`
-	Title      string `json:"title,omitempty"`
-	Message    string `json:"message,omitempty"`
-	Data       any    `json:"data,omitempty"`
+	Status     bool        `json:"status"`
+	StatusCode int         `json:"status_code"`
+	StatusText string      `json:"status_text"`
+	Title      string      `json:"title,omitempty"`
+	Message    string      `json:"message,omitempty"`
+	Data       util.Object `json:"data,omitempty"`
 }
 
 const (
@@ -63,11 +66,25 @@ func (s *request) Request(method, url string, body *bytes.Reader, queries map[st
 	}
 	defer response.Body.Close()
 
-	data := &map[string]any{}
+	data := util.Object{}
+
 	if response.Body != nil {
-		err := json.NewDecoder(response.Body).Decode(&data)
-		if err != nil {
-			return nil, err
+		if response.Header.Get("Content-Encoding") == "gzip" {
+			reader, err := gzip.NewReader(response.Body)
+			if err != nil {
+				return nil, err
+			}
+			defer reader.Close()
+
+			err = json.NewDecoder(reader).Decode(&data)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err := json.NewDecoder(response.Body).Decode(&data)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

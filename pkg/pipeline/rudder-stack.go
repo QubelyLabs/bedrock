@@ -11,11 +11,11 @@ type rudderStackService struct {
 	client analytics.Client
 }
 
-func (s *rudderStackService) Identify(data analytics.Identify) error {
+func (s *rudderStackService) Identify(data Identify) error {
 	return s.client.Enqueue(data)
 }
 
-func (s *rudderStackService) Track(data analytics.Track) error {
+func (s *rudderStackService) Track(data Track) error {
 	return s.client.Enqueue(data)
 }
 

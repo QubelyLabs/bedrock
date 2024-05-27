@@ -2,14 +2,14 @@ package repository
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/qubelylabs/bedrock/pkg/db"
+	"github.com/qubelylabs/bedrock/pkg/injection"
 	"gorm.io/gorm"
 )
 
 type Repository[E any] struct{}
 
 func (r *Repository[E]) SQL(c *gin.Context) *gorm.DB {
-	return db.GetSQLFromContext(c)
+	return injection.GetSQL(c)
 }
 
 func (r *Repository[E]) UpsertOne(c *gin.Context, entity *E) error {

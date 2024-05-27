@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/qubelylabs/bedrock/pkg/contract"
 	"gorm.io/gorm"
 )
@@ -48,21 +47,8 @@ func NewController[E any](
 // implement @Query('update') shouldUpdate: string to udpate if record already exist
 func (ctrl *Controller[E]) UpsertOne(c *gin.Context) {
 	entity := new(E)
-	if err := c.ShouldBindJSON(entity); err != nil {
-		if _, ok := err.(*validator.InvalidValidationError); ok {
-			log.Println(err)
-			ctrl.Error(c, "Invalid request, check and try again")
-			return
-		}
-
-		if data, ok := err.(validator.ValidationErrors); ok {
-			log.Println(err)
-			ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
-			return
-		}
-
-		log.Println(err)
-		ctrl.Error(c, "Invalid request, check and try again")
+	if data, ok := ctrl.Validate(c, entity); !ok {
+		ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
 		return
 	}
 
@@ -90,21 +76,8 @@ func (ctrl *Controller[E]) UpsertOne(c *gin.Context) {
 
 func (ctrl *Controller[E]) UpsertMany(c *gin.Context) {
 	entities := []E{}
-	if err := c.ShouldBindJSON(entities); err != nil {
-		if _, ok := err.(*validator.InvalidValidationError); ok {
-			log.Println(err)
-			ctrl.Error(c, "Invalid request, check and try again")
-			return
-		}
-
-		if data, ok := err.(validator.ValidationErrors); ok {
-			log.Println(err)
-			ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
-			return
-		}
-
-		log.Println(err)
-		ctrl.Error(c, "Invalid request, check and try again")
+	if data, ok := ctrl.Validate(c, &entities); !ok {
+		ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
 		return
 	}
 
@@ -136,25 +109,8 @@ func (ctrl *Controller[E]) UpsertMany(c *gin.Context) {
 
 func (ctrl *Controller[E]) CreateOne(c *gin.Context) {
 	entity := new(E)
-	fmt.Println("jhkjlk", 11)
-	if err := c.ShouldBindJSON(entity); err != nil {
-
-		fmt.Println(err, 11)
-		if _, ok := err.(*validator.InvalidValidationError); ok {
-			log.Println(err)
-			ctrl.Error(c, "Invalid request, check and try again")
-			return
-		}
-
-		fmt.Println(err, 12)
-		if data, ok := err.(validator.ValidationErrors); ok {
-			log.Println(err)
-			ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
-			return
-		}
-
-		log.Println(err)
-		ctrl.Error(c, "Invalid request, check and try again")
+	if data, ok := ctrl.Validate(c, entity); !ok {
+		ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
 		return
 	}
 
@@ -200,21 +156,8 @@ func (ctrl *Controller[E]) CreateOne(c *gin.Context) {
 
 func (ctrl *Controller[E]) CreateMany(c *gin.Context) {
 	entities := []E{}
-	if err := c.ShouldBindJSON(entities); err != nil {
-		if _, ok := err.(*validator.InvalidValidationError); ok {
-			log.Println(err)
-			ctrl.Error(c, "Invalid request, check and try again")
-			return
-		}
-
-		if data, ok := err.(validator.ValidationErrors); ok {
-			log.Println(err)
-			ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
-			return
-		}
-
-		log.Println(err)
-		ctrl.Error(c, "Invalid request, check and try again")
+	if data, ok := ctrl.Validate(c, &entities); !ok {
+		ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
 		return
 	}
 
@@ -265,21 +208,8 @@ func (ctrl *Controller[E]) CreateMany(c *gin.Context) {
 func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 	entity := new(E)
 	id := c.Param("id")
-	if err := c.ShouldBindJSON(entity); err != nil {
-		if _, ok := err.(*validator.InvalidValidationError); ok {
-			log.Println(err)
-			ctrl.Error(c, "Invalid request, check and try again")
-			return
-		}
-
-		if data, ok := err.(validator.ValidationErrors); ok {
-			log.Println(err)
-			ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
-			return
-		}
-
-		log.Println(err)
-		ctrl.Error(c, "Invalid request, check and try again")
+	if data, ok := ctrl.Validate(c, entity); !ok {
+		ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
 		return
 	}
 
@@ -338,21 +268,8 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 	entity := new(E)
 	id := c.Param("id")
-	if err := c.ShouldBindJSON(entity); err != nil {
-		if _, ok := err.(*validator.InvalidValidationError); ok {
-			log.Println(err)
-			ctrl.Error(c, "Invalid request, check and try again")
-			return
-		}
-
-		if data, ok := err.(validator.ValidationErrors); ok {
-			log.Println(err)
-			ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
-			return
-		}
-
-		log.Println(err)
-		ctrl.Error(c, "Invalid request, check and try again")
+	if data, ok := ctrl.Validate(c, entity); !ok {
+		ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
 		return
 	}
 
