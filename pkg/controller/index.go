@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/QubelyLabs/bedrock/pkg/contract"
 	"github.com/gin-gonic/gin"
-	"github.com/qubelylabs/bedrock/pkg/contract"
 	"gorm.io/gorm"
 )
 

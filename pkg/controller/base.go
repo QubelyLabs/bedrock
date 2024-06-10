@@ -4,10 +4,10 @@ import (
 	"errors"
 	"log"
 
+	"github.com/QubelyLabs/bedrock/pkg/injection"
+	"github.com/QubelyLabs/bedrock/pkg/util"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/qubelylabs/bedrock/pkg/injection"
-	"github.com/qubelylabs/bedrock/pkg/util"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )

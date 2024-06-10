@@ -1,4 +1,4 @@
-module github.com/qubelylabs/bedrock
+module github.com/QubelyLabs/bedrock
 
 go 1.21.4
 

@@ -1,9 +1,9 @@
 package middleware
 
 import (
+	"github.com/QubelyLabs/bedrock/pkg/injection"
+	"github.com/QubelyLabs/bedrock/pkg/util"
 	"github.com/gin-gonic/gin"
-	"github.com/qubelylabs/bedrock/pkg/injection"
-	"github.com/qubelylabs/bedrock/pkg/util"
 )
 
 func Injection() gin.HandlerFunc {

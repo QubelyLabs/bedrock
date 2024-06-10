@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/qubelylabs/bedrock/pkg/util"
+	"github.com/QubelyLabs/bedrock/pkg/util"
 )
 
 // HttpResponse represents the response structure

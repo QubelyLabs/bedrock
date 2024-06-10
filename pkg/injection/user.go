@@ -1,8 +1,8 @@
 package injection
 
 import (
+	"github.com/QubelyLabs/bedrock/pkg/util"
 	"github.com/gin-gonic/gin"
-	"github.com/qubelylabs/bedrock/pkg/util"
 )
 
 const (

@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/QubelyLabs/bedrock/pkg/injection"
 	"github.com/gin-gonic/gin"
-	"github.com/qubelylabs/bedrock/pkg/injection"
 	"gorm.io/gorm"
 )
 
