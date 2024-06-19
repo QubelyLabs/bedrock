@@ -143,3 +143,41 @@ func FromBase64(str string) Object {
 
 	return data
 }
+
+func ToBase64String(value string) string {
+	return base64.StdEncoding.EncodeToString([]byte(value))
+}
+
+func FromBase64String(str string) (string, error) {
+	value, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+
+	return string(value), nil
+}
+
+// func getStringProperty(properties map[string]interface{}, key string) (string, error) {
+//     value, ok := properties[key]
+//     if !ok || value == "" {
+//         return "", &PropertyError{PropertyName: key}
+//     }
+//     strValue, ok := value.(string)
+//     if !ok {
+//         return "", &PropertyError{PropertyName: key}
+//     }
+//     return strValue, nil
+// }
+
+// func getMapProperty(properties map[string]interface{}, key string) (map[string]util.Object, error) {
+//     value, ok := properties[key]
+//     if !ok {
+//         return nil, &PropertyError{PropertyName: key}
+//     }
+//     mapValue, ok := value.(map[string]util.Object)
+//     if !ok {
+//         return nil, & PropertyError{PropertyName: key}
+//     }
+//     return mapValue, nil
+// }

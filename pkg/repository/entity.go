@@ -14,7 +14,22 @@ type Entity struct {
 	DeletedAt gorm.DeletedAt `gorm:"index;column:deleted_at"`
 }
 
+func (e *Entity) BeforeSave(tx *gorm.DB) error {
+	if e.ID == "" {
+		return nil
+	}
+
+	e.ID = uuid.New().String()
+	e.CreatedAt = time.Now()
+	e.UpdatedAt = time.Now()
+	return nil
+}
+
 func (e *Entity) BeforeCreate(tx *gorm.DB) error {
+	if e.ID == "" {
+		return nil
+	}
+
 	e.ID = uuid.New().String()
 	e.CreatedAt = time.Now()
 	e.UpdatedAt = time.Now()
