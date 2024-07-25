@@ -1,3 +1,3 @@
 package util
 
-type Object map[string]any
+type Object = map[string]any

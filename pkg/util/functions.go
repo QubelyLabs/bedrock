@@ -135,8 +135,8 @@ func FromBase64(str string) Object {
 		return nil
 	}
 
-	// Unmarshal the JSON bytes to a map[string]any
-	var data map[string]any
+	// Unmarshal the JSON bytes
+	var data Object
 	if err := json.Unmarshal(jsonData, &data); err != nil {
 		return nil
 	}

@@ -28,9 +28,9 @@ func Authenticate(method string, url string, headers map[string]string) (bool, u
 		return false, nil, nil, nil
 	}
 
-	status, _ := response.Data["status"].(bool)
-	user, _ := response.Data["user"].(util.Object)
-	workspace, _ := response.Data["workspace"].(util.Object)
+	status, _ := response.Data.Data["status"].(bool)
+	user, _ := response.Data.Data["user"].(util.Object)
+	workspace, _ := response.Data.Data["workspace"].(util.Object)
 
 	return status, user, workspace, nil
 }
@@ -52,7 +52,7 @@ func Authorize(userId, workspaceId, permissionType string, permissions []string)
 		return false, nil
 	}
 
-	status := response.Data["status"].(bool)
+	status := response.Data.Data["status"].(bool)
 
 	return status, nil
 }
@@ -69,8 +69,8 @@ func GetWorkspace(sourceId string) (string, string, error) {
 		return "", "", err
 	}
 
-	userId := response.Data["userId"].(string)
-	workspaceId := response.Data["workspaceId"].(string)
+	userId := response.Data.Data["userId"].(string)
+	workspaceId := response.Data.Data["workspaceId"].(string)
 
 	return userId, workspaceId, nil
 }

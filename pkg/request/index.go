@@ -13,12 +13,18 @@ import (
 
 // HttpResponse represents the response structure
 type HttpResponse struct {
-	Status     bool        `json:"status"`
-	StatusCode int         `json:"status_code"`
-	StatusText string      `json:"status_text"`
-	Title      string      `json:"title,omitempty"`
-	Message    string      `json:"message,omitempty"`
-	Data       util.Object `json:"data,omitempty"`
+	Status     bool         `json:"status"`
+	StatusCode int          `json:"status_code"`
+	StatusText string       `json:"status_text"`
+	Title      string       `json:"title,omitempty"`
+	Message    string       `json:"message,omitempty"`
+	Data       DataResponse `json:"data,omitempty"`
+}
+
+type DataResponse struct {
+	Status  bool        `json:"status"`
+	Message string      `json:"message,omitempty"`
+	Data    util.Object `json:"data,omitempty"`
 }
 
 const (
@@ -66,7 +72,7 @@ func (s *request) Request(method, url string, body *bytes.Reader, queries map[st
 	}
 	defer response.Body.Close()
 
-	data := util.Object{}
+	data := DataResponse{}
 
 	if response.Body != nil {
 		if response.Header.Get("Content-Encoding") == "gzip" {
