@@ -26,7 +26,7 @@ type Controller[E any] struct {
 	name       string
 	plural     string
 	searchable []string
-	unique     func(*E) (query any, args []any)
+	unique     func(*E) (any, []any)
 	morph      func(*E)
 	hooks      map[string]func(*E, *gin.Context)
 }
@@ -36,7 +36,7 @@ func NewController[E any](
 	name,
 	plural string,
 	searchable []string,
-	unique func(*E) (query any, args []any),
+	unique func(*E) (any, []any),
 	morph func(*E),
 	hooks map[string]func(*E, *gin.Context),
 ) *Controller[E] {
