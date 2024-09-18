@@ -43,8 +43,6 @@ func NewController[E any](
 	return &Controller[E]{&BaseController{}, repository, name, plural, searchable, unique, morph, hooks}
 }
 
-// TODO
-// implement @Query('update') shouldUpdate: string to udpate if record already exist
 func (ctrl *Controller[E]) UpsertOne(c *gin.Context) {
 	entity := new(E)
 	if data, ok := ctrl.Validate(c, entity); !ok {
@@ -267,13 +265,13 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 
 func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 	entity := new(E)
-	id := c.Param("id")
+	id := c.Query("id")
 	if data, ok := ctrl.Validate(c, entity); !ok {
 		ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
 		return
 	}
 
-	ids := strings.Split(id, ",")
+	ids := strings.Split(id, "|")
 	var entities []E
 	for _, _ = range ids {
 		existingEntity, err := ctrl.repository.FindOne(c, id)
@@ -319,7 +317,7 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 		}
 	}
 
-	err := ctrl.repository.UpdateMany(c, entity, "id IN ?", strings.Split(id, ","))
+	err := ctrl.repository.UpdateMany(c, entity, "id IN ?", ids)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to update %v record, try again in a bit", ctrl.name), 500)
@@ -353,38 +351,6 @@ func (ctrl *Controller[E]) FindOne(c *gin.Context) {
 	ctrl.Success(c, fmt.Sprintf("%v record retrieved successfully", ctrl.name), entity)
 }
 
-// async findAll(@Query() queries: any, @GetContext() context: any) {
-// 	const [selector, page, perPage, columns, relations] = makeFilter(
-// 	  queries,
-// 	  this.searchable,
-// 	);
-// 	const _page = page < 1 ? 1 : page;
-// 	const _nextPage = _page + 1;
-// 	const _prevPage = _page - 1;
-// 	const _perPage = perPage;
-// 	const _filter = {
-// 	  select: columns,
-// 	  ...(perPage ? { take: perPage } : {}),
-// 	  ...(page && perPage ? { skip: (page - 1) * perPage } : {}),
-// 	  where: selector.length > 0 ? selector : undefined,
-// 	  relations,
-// 	};
-
-//		const total = await this.service.withContext(context).count(_filter);
-//		const entities = await this.service.withContext(context).find(_filter);
-//		return success(
-//		  entities,
-//		  `${titleCase(this.name)}`,
-//		  `${titleCase(this.name)} list`,
-//		  {
-//			current_page: _page,
-//			next_page: _nextPage > total ? total : _nextPage,
-//			prev_page: _prevPage < 1 ? null : _prevPage,
-//			per_page: _perPage,
-//			total,
-//		  },
-//		);
-//	  }
 func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 	pageStr := c.Query("page")
 	page, err := strconv.Atoi(pageStr)
@@ -444,9 +410,9 @@ func (ctrl *Controller[E]) DeleteOne(c *gin.Context) {
 }
 
 func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
 
-	ids := strings.Split(id, ",")
+	ids := strings.Split(id, "|")
 	var entities []E
 	for _, _ = range ids {
 		entity, err := ctrl.repository.FindOne(c, id)
