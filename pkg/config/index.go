@@ -2,6 +2,8 @@ package config
 
 import (
 	"log"
+	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -15,6 +17,17 @@ func Set[T any]() *T {
 
 	// load config from env
 	viper.AutomaticEnv()
+
+	// Get all environment variables from the server
+	envVars := os.Environ()
+	for _, env := range envVars {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) == 2 {
+			key := parts[0]
+			value := parts[1]
+			viper.Set(key, value)
+		}
+	}
 
 	// Viper reads all the variables from env file and log error if any found
 	if err := viper.ReadInConfig(); err != nil {
