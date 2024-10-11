@@ -3,16 +3,14 @@ package identity
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/QubelyLabs/bedrock/pkg/request"
 	"github.com/QubelyLabs/bedrock/pkg/util"
 )
 
-const (
-	baseUrl = "http://localhost:5001"
-)
-
 func Authenticate(method string, url string, headers map[string]string) (bool, util.Object, util.Object, error) {
+	baseUrl := os.Getenv("IDENTITY_BASE_URL")
 	payload := util.Object{
 		"method":  method,
 		"url":     url,
@@ -36,6 +34,7 @@ func Authenticate(method string, url string, headers map[string]string) (bool, u
 }
 
 func Authorize(userId, workspaceId, permissionType string, permissions []string) (bool, error) {
+	baseUrl := os.Getenv("IDENTITY_BASE_URL")
 	payload := util.Object{
 		"userId":      userId,
 		"workspaceId": workspaceId,
@@ -58,6 +57,7 @@ func Authorize(userId, workspaceId, permissionType string, permissions []string)
 }
 
 func GetWorkspace(sourceId string) (string, string, error) {
+	baseUrl := os.Getenv("IDENTITY_BASE_URL")
 	url := fmt.Sprintf("%v/workspace/%v/sourceId", baseUrl, sourceId)
 	response, err := request.Get(url, nil, nil, 0)
 	if err != nil {
