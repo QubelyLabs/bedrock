@@ -98,8 +98,8 @@ func (ctrl *Controller[E]) UpsertMany(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[BeforeCreate]; ok {
-		for _, entity := range entities {
-			morph(&entity, c)
+		for i := range entities {
+			morph(&entities[i], c)
 		}
 	}
 
@@ -133,8 +133,8 @@ func (ctrl *Controller[E]) UpsertMany(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[AfterCreate]; ok {
-		for _, entity := range entities {
-			morph(&entity, c)
+		for i := range entities {
+			morph(&entities[i], c)
 		}
 	}
 
@@ -208,8 +208,8 @@ func (ctrl *Controller[E]) CreateMany(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[BeforeCreate]; ok {
-		for _, entity := range entities {
-			morph(&entity, c)
+		for i := range entities {
+			morph(&entities[i], c)
 		}
 	}
 
@@ -261,8 +261,8 @@ func (ctrl *Controller[E]) CreateMany(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[AfterCreate]; ok {
-		for _, entity := range entities {
-			morph(&entity, c)
+		for i := range entities {
+			morph(&entities[i], c)
 		}
 	}
 
@@ -345,7 +345,7 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 
 func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 	entity := new(E)
-	id := c.Query("id")
+	id := c.Param("id")
 	if data, ok := ctrl.Validate(c, entity); !ok {
 		ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
 		return
@@ -353,7 +353,7 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 
 	ids := strings.Split(id, "|")
 	var entities []E
-	for _, _ = range ids {
+	for range ids {
 		existingEntity, err := ctrl.repository.FindOne(c, id)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
@@ -371,8 +371,8 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[BeforeUpdate]; ok {
-		for _, entity := range entities {
-			morph(&entity, c)
+		for i := range entities {
+			morph(&entities[i], c)
 		}
 	}
 
@@ -425,8 +425,8 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[AfterUpdate]; ok {
-		for _, entity := range entities {
-			morph(&entity, c)
+		for i := range entities {
+			morph(&entities[i], c)
 		}
 	}
 
@@ -480,13 +480,14 @@ func (ctrl *Controller[E]) FindOne(c *gin.Context) {
 }
 
 func (ctrl *Controller[E]) FindMany(c *gin.Context) {
+	log.Println(c.Query("firstname"), c.Request.Context(), c.Request.URL.Query(), c.Request.URL.Query(), "per_page")
 	pageStr := c.Query("page")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page <= 0 {
 		page = 1
 	}
 
-	perPageStr := c.Query("perPage")
+	perPageStr := c.Query("per_page")
 	perPage, err := strconv.Atoi(perPageStr)
 	if err != nil || perPage <= 0 {
 		perPage = 12
@@ -507,9 +508,11 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 		}
 	}
 
-	query, args := ctrl.buildGQuery(c.Request.URL.Query())
+	query, args := ctrl.buildQuery(c.Request.URL.Query())
 
-	total, err := ctrl.repository.Count(c, perPage, offset, query, args)
+	log.Println(query, args)
+
+	total, err := ctrl.repository.Count(c, query, args...)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to retrieve %v record, try again in a bit", ctrl.name), 500)
@@ -546,8 +549,8 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[AfterRead]; ok {
-		for _, entity := range entities {
-			morph(&entity, c)
+		for i := range entities {
+			morph(&entities[i], c)
 		}
 	}
 
@@ -615,11 +618,14 @@ func (ctrl *Controller[E]) DeleteOne(c *gin.Context) {
 }
 
 func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
-	id := c.Query("id")
+	ids := new([]string)
+	if data, ok := ctrl.Validate(c, ids); !ok {
+		ctrl.ErrorWithData(c, "Invalid request, check and try again", data)
+		return
+	}
 
-	ids := strings.Split(id, "|")
 	var entities []E
-	for _, _ = range ids {
+	for _, id := range *ids {
 		entity, err := ctrl.repository.FindOne(c, id)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
@@ -637,8 +643,8 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[BeforeDelete]; ok {
-		for _, entity := range entities {
-			morph(&entity, c)
+		for i := range entities {
+			morph(&entities[i], c)
 		}
 	}
 
@@ -653,7 +659,7 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 		}
 	}
 
-	err := ctrl.repository.DeleteMany(c, "id IN ?", ids)
+	err := ctrl.repository.DeleteMany(c, "id IN ?", *ids)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to remove %v record, try again in a bit", ctrl.name), 500)
@@ -672,22 +678,22 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[AfterDelete]; ok {
-		for _, entity := range entities {
-			morph(&entity, c)
+		for i := range entities {
+			morph(&entities[i], c)
 		}
 	}
 
 	ctrl.Success(c, fmt.Sprintf("%v records removed successfully", ctrl.name), nil)
 }
 
-func (ctrl *Controller[E]) buildGQuery(queryParams url.Values) (string, []interface{}) {
+func (ctrl *Controller[E]) buildQuery(queryParams url.Values) (string, []interface{}) {
 	var (
 		queryParts []string
 		args       []interface{}
 	)
 
 	// Keys to exclude from the query
-	excludeKeys := []string{"page", "perPage"}
+	excludeKeys := []string{"page", "per_page"}
 
 	// Determine joiner ("and" or "or"), default to "and"
 	joiner := strings.ToUpper(queryParams.Get("joiner"))
