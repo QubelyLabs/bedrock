@@ -70,6 +70,15 @@ func (ctrl *BaseController) Success(c *gin.Context, message string, data any) {
 	})
 }
 
+func (ctrl *BaseController) SuccessWithMeta(c *gin.Context, message string, data any, meta any) {
+	c.JSON(200, gin.H{
+		"status":  true,
+		"message": message,
+		"data":    data,
+		"meta":    meta,
+	})
+}
+
 func (ctrl *BaseController) Error(c *gin.Context, message string) {
 	c.JSON(400, gin.H{
 		"status":  false,

@@ -3,6 +3,8 @@ package controller
 import (
 	"fmt"
 	"log"
+	"math"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -275,7 +277,7 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 		return
 	}
 
-	existingEntity, err := ctrl.repository.FindOne(c, id)
+	_, err := ctrl.repository.FindOne(c, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Println(err)
@@ -289,7 +291,7 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 	}
 
 	if morph, ok := ctrl.morphs[BeforeUpdate]; ok {
-		morph(&existingEntity, c)
+		morph(entity, c)
 	}
 
 	if ctrl.unique != nil {
@@ -434,11 +436,11 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 func (ctrl *Controller[E]) FindOne(c *gin.Context) {
 	id := c.Param("id")
 
-	if morph, ok := ctrl.morphs[BeforeDelete]; ok {
+	if morph, ok := ctrl.morphs[BeforeRead]; ok {
 		morph(new(E), c)
 	}
 
-	if hook, ok := ctrl.hooks[BeforeDelete]; ok {
+	if hook, ok := ctrl.hooks[BeforeRead]; ok {
 		err := hook(new(E), c)
 		if err != nil {
 			log.Println(err)
@@ -461,7 +463,7 @@ func (ctrl *Controller[E]) FindOne(c *gin.Context) {
 		return
 	}
 
-	if hook, ok := ctrl.hooks[AfterDelete]; ok {
+	if hook, ok := ctrl.hooks[AfterRead]; ok {
 		err := hook(&entity, c)
 		if err != nil {
 			log.Println(err)
@@ -470,7 +472,7 @@ func (ctrl *Controller[E]) FindOne(c *gin.Context) {
 		}
 	}
 
-	if morph, ok := ctrl.morphs[AfterDelete]; ok {
+	if morph, ok := ctrl.morphs[AfterRead]; ok {
 		morph(&entity, c)
 	}
 
@@ -492,11 +494,11 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 
 	offset := (page - 1) * perPage
 
-	if morph, ok := ctrl.morphs[BeforeDelete]; ok {
+	if morph, ok := ctrl.morphs[BeforeRead]; ok {
 		morph(new(E), c)
 	}
 
-	if hook, ok := ctrl.hooks[BeforeDelete]; ok {
+	if hook, ok := ctrl.hooks[BeforeRead]; ok {
 		err := hook(new(E), c)
 		if err != nil {
 			log.Println(err)
@@ -505,14 +507,34 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 		}
 	}
 
-	entities, err := ctrl.repository.FindManyWithLimit(c, perPage, offset, nil)
+	query, args := ctrl.buildGQuery(c.Request.URL.Query())
+
+	total, err := ctrl.repository.Count(c, perPage, offset, query, args)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to retrieve %v record, try again in a bit", ctrl.name), 500)
 		return
 	}
 
-	if hook, ok := ctrl.hooks[AfterDelete]; ok {
+	lastPage := math.Ceil(float64(total) / float64(perPage))
+	nextPage := page + 1
+	if nextPage > int(lastPage) {
+		nextPage = 0
+	}
+
+	prevPage := page - 1
+	if prevPage < 1 {
+		prevPage = 0
+	}
+
+	entities, err := ctrl.repository.FindManyWithLimit(c, perPage, offset, query, args...)
+	if err != nil {
+		log.Println(err)
+		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to retrieve %v record, try again in a bit", ctrl.name), 500)
+		return
+	}
+
+	if hook, ok := ctrl.hooks[AfterRead]; ok {
 		for _, entity := range entities {
 			err := hook(&entity, c)
 			if err != nil {
@@ -523,13 +545,21 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 		}
 	}
 
-	if morph, ok := ctrl.morphs[AfterDelete]; ok {
+	if morph, ok := ctrl.morphs[AfterRead]; ok {
 		for _, entity := range entities {
 			morph(&entity, c)
 		}
 	}
 
-	ctrl.Success(c, fmt.Sprintf("%v records retrieved successfully", ctrl.name), entities)
+	meta := map[string]any{
+		"page":     page,
+		"per_page": perPage,
+		"total":    total,
+		"prev":     prevPage,
+		"next":     nextPage,
+	}
+
+	ctrl.SuccessWithMeta(c, fmt.Sprintf("%v records retrieved successfully", ctrl.name), entities, meta)
 }
 
 func (ctrl *Controller[E]) DeleteOne(c *gin.Context) {
@@ -648,4 +678,46 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 	}
 
 	ctrl.Success(c, fmt.Sprintf("%v records removed successfully", ctrl.name), nil)
+}
+
+func (ctrl *Controller[E]) buildGQuery(queryParams url.Values) (string, []interface{}) {
+	var (
+		queryParts []string
+		args       []interface{}
+	)
+
+	// Keys to exclude from the query
+	excludeKeys := []string{"page", "perPage"}
+
+	// Determine joiner ("and" or "or"), default to "and"
+	joiner := strings.ToUpper(queryParams.Get("joiner"))
+	if joiner != "OR" {
+		joiner = "AND"
+	}
+
+	// Build the query, excluding specified keys
+	for key, values := range queryParams {
+		// Skip excluded keys and "joiner" key
+		if ctrl.contains(excludeKeys, key) || key == "joiner" {
+			continue
+		}
+
+		if len(values) > 0 {
+			// Add condition for each parameter
+			queryParts = append(queryParts, fmt.Sprintf("%s = ?", key))
+			args = append(args, values[0]) // Add only the first value for simplicity
+		}
+	}
+
+	query := strings.Join(queryParts, " "+joiner+" ")
+	return query, args
+}
+
+func (ctrl *Controller[E]) contains(slice []string, value string) bool {
+	for _, item := range slice {
+		if item == value {
+			return true
+		}
+	}
+	return false
 }
