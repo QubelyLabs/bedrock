@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"net/url"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -181,3 +183,427 @@ func FromBase64String(str string) (string, error) {
 //     }
 //     return mapValue, nil
 // }
+
+func Min(items ...uint64) uint64 {
+	if len(items) == 0 {
+		return uint64(0)
+	}
+
+	min := items[0]
+	for _, i := range items[1:] {
+		if i < min {
+			min = i
+		}
+	}
+
+	return min
+}
+
+func FormatNumberToString(value any) string {
+	switch v := value.(type) {
+	case nil:
+		return ""
+	case string:
+		return v
+	case int:
+		if v == 0 {
+			return ""
+		}
+		return strconv.Itoa(v)
+	case int64:
+		if v == 0 {
+			return ""
+		}
+		return strconv.FormatInt(v, 10)
+	case float64:
+		if v == 0 {
+			return ""
+		}
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	default:
+		log.Printf("FormatCustomerNumber - unable to convert value (%v) of type %T to a string equivalent", v, v)
+		return ""
+	}
+}
+
+func UTCTime() time.Time {
+	return time.Now().UTC()
+}
+
+func LocalTime(name string) time.Time {
+	if name == "" {
+		name = "Africa/Lagos"
+	}
+
+	// Load the desired location
+	location, err := time.LoadLocation(name)
+	if err != nil {
+		fmt.Println("Error loading location", name, err)
+
+		// try local location
+		location, err = time.LoadLocation("Local")
+
+		if err != nil {
+			fmt.Println("Error loading local location", err)
+
+			// we can live with UTC at this point
+			return UTCTime()
+		}
+	}
+
+	return time.Now().In(location)
+}
+
+func ParseUintWithDefault(value string, defaultValue uint64) uint64 {
+	parsedValue, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		return defaultValue
+	}
+	return parsedValue
+}
+
+func MakeFilter(queries url.Values, model any) (map[string]any, uint64, uint64) {
+	page := ParseUintWithDefault(queries.Get("page"), 1)
+	perPage := ParseUintWithDefault(queries.Get("per_page"), 12)
+
+	filterType := queries.Get("type")
+	if filterType == "" || !InArray(FilterTypes, filterType) {
+		filterType = FilterTypePartialMatch
+	}
+
+	from := queries.Get("from")
+	to := queries.Get("to")
+	timeKey := queries.Get("timeKey")
+	if timeKey == "" {
+		timeKey = "createdAt"
+	}
+
+	exactFilter := map[string]any{}
+	partialFilter := []map[string]any{}
+	for key, values := range queries {
+		if len(values) < 1 {
+			continue
+		}
+
+		value := values[0]
+
+		// ignore for predefined queries
+		if InArray([]string{"page", "per_page", "type", "from", "to", "timeKey"}, value) {
+			continue
+		}
+
+		// ignore for queries not in the provided struct/model i.e mongo collection
+		if !InArray(GetStructTags(model, "bson"), value) {
+			continue
+		}
+
+		if filterType == FilterTypeExactMatch {
+			exactFilter[key] = value
+		} else {
+			partialFilter = append(partialFilter, map[string]any{
+				key: map[string]any{
+					"$regex":   value,
+					"$options": "i",
+				},
+			})
+		}
+	}
+
+	filter := map[string]any{}
+	if filterType == FilterTypeExactMatch {
+		filter = exactFilter
+	} else if len(filter) > 0 {
+		filter = map[string]any{
+			"$or": partialFilter,
+		}
+	}
+
+	if from != "" && to != "" {
+		f, fErr := time.Parse(DATE_TIME_FORMAT, from)
+		t, tErr := time.Parse(DATE_TIME_FORMAT, to)
+		if fErr == nil && tErr == nil {
+			if len(filter) > 0 {
+				filter = map[string]any{
+					"$and": []map[string]any{
+						filter,
+						{
+							timeKey: map[string]any{
+								"$gte": f,
+								"$lte": t,
+							},
+						},
+					},
+				}
+			} else {
+				filter = map[string]any{
+					"$and": []map[string]any{
+						{
+							timeKey: map[string]any{
+								"$gte": f,
+								"$lte": t,
+							},
+						},
+					},
+				}
+			}
+		}
+	} else if from != "" && to == "" {
+		f, err := time.Parse(DATE_TIME_FORMAT, from)
+		if err == nil {
+			if len(filter) > 0 {
+				filter = map[string]any{
+					"$and": []map[string]any{
+						filter,
+						{
+							timeKey: map[string]any{
+								"$gte": f,
+							},
+						},
+					},
+				}
+			} else {
+				filter = map[string]any{
+					"$and": []map[string]any{
+						{
+							timeKey: map[string]any{
+								"$gte": f,
+							},
+						},
+					},
+				}
+			}
+		}
+	} else if from == "" && to != "" {
+		t, err := time.Parse(DATE_TIME_FORMAT, to)
+		if err == nil {
+			if len(filter) > 0 {
+				filter = map[string]any{
+					"$and": []map[string]any{
+						filter,
+						{
+							timeKey: map[string]any{
+								"$lte": t,
+							},
+						},
+					},
+				}
+			} else {
+				filter = map[string]any{
+					"$and": []map[string]any{
+						{
+							timeKey: map[string]any{
+								"$lte": t,
+							},
+						},
+					},
+				}
+			}
+		}
+	}
+
+	return filter, page, perPage
+}
+
+func ArraySum(arr []float64) float64 {
+	res := 0.0
+	for i := 0; i < len(arr); i++ {
+		res += arr[i]
+	}
+	return res
+}
+
+func InArray[T comparable](arr []T, pin T) bool {
+
+	for i := 0; i < len(arr); i++ {
+
+		if arr[i] == pin {
+			return true
+		}
+	}
+
+	return false
+}
+
+func ArrayMap[T, U any](ts []T, f func(T) U) []U {
+	us := make([]U, len(ts))
+	for i := range ts {
+		us[i] = f(ts[i])
+	}
+	return us
+}
+
+// Get retrieves tags from an arbitrary struct and return then as an array
+// group can be any of "bson", "json" etc
+func GetStructTags(obj any, group string) []string {
+	t := reflect.TypeOf(obj)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	var tags []string
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag := field.Tag.Get(group)
+		if tag != "" {
+			tags = append(tags, tag)
+		}
+	}
+
+	return tags
+}
+
+func FilterNonZeroFields(input any) map[string]any {
+	result := map[string]any{}
+	v := reflect.ValueOf(input)
+	t := reflect.TypeOf(input)
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldTag := t.Field(i).Tag.Get("json")
+
+		var keyName string
+		if fieldTag != "" {
+			parts := strings.Split(fieldTag, ",")
+			keyName = parts[0]
+		} else {
+			keyName = t.Field(i).Name
+		}
+
+		if field.Kind() == reflect.Struct {
+			nestedResult := FilterNonZeroFields(field.Interface())
+			if len(nestedResult) > 0 {
+				result[keyName] = nestedResult
+			}
+		} else {
+			if !reflect.DeepEqual(field.Interface(), reflect.Zero(field.Type()).Interface()) {
+				result[keyName] = field.Interface()
+			}
+		}
+	}
+	return result
+}
+
+func AddDeleteFilter(filter map[string]any) map[string]any {
+	if len(filter) > 0 {
+		return map[string]any{
+			"$and": []map[string]any{
+				filter,
+				{
+					"deletedAt": nil,
+				},
+			},
+		}
+	}
+
+	return map[string]any{
+		"$and": []map[string]any{
+			{
+				"deletedAt": nil,
+			},
+		},
+	}
+}
+
+func ParsePercentageString(input string) (bool, float64, error) {
+	endsWithPercent := strings.HasSuffix(input, "%")
+	if endsWithPercent {
+		input = input[:len(input)-1]
+	}
+
+	value, err := strconv.ParseFloat(input, 64)
+	if err != nil {
+		return endsWithPercent, 0, fmt.Errorf("invalid input: %w", err)
+	}
+
+	return endsWithPercent, value, nil
+}
+
+func IsPartOfList(list, item string) bool {
+	items := strings.Split(list, ",")
+	for _, v := range items {
+		if strings.TrimSpace(v) == item {
+			return true
+		}
+	}
+	return false
+}
+
+// [TODO] refactor, optimize
+func HydrateStructFromMap(m any, s any) error {
+	// Convert map to JSON
+	jsonData, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	// Convert JSON to struct
+	err = json.Unmarshal(jsonData, &s)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// resolveValue resolves a dotted path like "ledger.updatedAt" in a map
+func resolveValue(m map[string]any, path string) (any, bool) {
+	keys := strings.Split(path, ".")
+	var current any = m
+
+	for _, key := range keys {
+		if reflect.TypeOf(current).Kind() == reflect.Map {
+			currentMap := current.(map[string]any)
+			val, exists := currentMap[key]
+			if !exists {
+				return nil, false
+			}
+			current = val
+		} else {
+			return nil, false
+		}
+	}
+	return current, true
+}
+
+// formatTime formats the time based on the provided Go format
+func formatTime(input any, format string) (string, bool) {
+	t, ok := input.(time.Time)
+	if !ok {
+		return "", false
+	}
+	return t.Format(format), true
+}
+
+// transformMap applies the template to the input map and returns a new map
+func TransformMapForReport(records []map[string]any, template map[string]string) []map[string]any {
+	results := []map[string]any{}
+
+	for _, record := range records {
+		result := map[string]any{}
+		for newKey, templateValue := range template {
+			parts := strings.Split(templateValue, ",")
+			fieldPath := strings.TrimSpace(parts[0])
+
+			value, found := resolveValue(record, fieldPath)
+			if !found {
+				result[newKey] = strings.TrimSpace(templateValue)
+			} else {
+				if len(parts) > 1 {
+					format := strings.TrimSpace(parts[1])
+					formattedValue, ok := formatTime(value, format)
+					if ok {
+						result[newKey] = formattedValue
+					} else {
+						result[newKey] = fmt.Sprintf("%v", value)
+					}
+				} else {
+					result[newKey] = fmt.Sprintf("%v", value)
+				}
+			}
+		}
+
+		results = append(results, result)
+	}
+
+	return results
+}
