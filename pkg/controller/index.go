@@ -55,7 +55,12 @@ func (ctrl *Controller[E]) UpsertOne(c *gin.Context) {
 	}
 
 	if hook, ok := ctrl.hooks[BeforeCreate]; ok {
-		hook(entity, c)
+		err := hook(entity, c)
+		if err != nil {
+			log.Println(err)
+			ctrl.Error(c, err.Error())
+			return
+		}
 	}
 
 	err := ctrl.repository.UpsertOne(c, entity)
@@ -66,7 +71,12 @@ func (ctrl *Controller[E]) UpsertOne(c *gin.Context) {
 	}
 
 	if hook, ok := ctrl.hooks[AfterCreate]; ok {
-		hook(entity, c)
+		err := hook(entity, c)
+		if err != nil {
+			log.Println(err)
+			ctrl.Error(c, err.Error())
+			return
+		}
 	}
 
 	ctrl.Success(c, fmt.Sprintf("%v record saved successfully", ctrl.name), entity)
@@ -85,7 +95,12 @@ func (ctrl *Controller[E]) UpsertMany(c *gin.Context) {
 
 	if hook, ok := ctrl.hooks[BeforeCreate]; ok {
 		for _, entity := range entities {
-			hook(&entity, c)
+			err := hook(&entity, c)
+			if err != nil {
+				log.Println(err)
+				ctrl.Error(c, err.Error())
+				return
+			}
 		}
 	}
 
@@ -98,7 +113,12 @@ func (ctrl *Controller[E]) UpsertMany(c *gin.Context) {
 
 	if hook, ok := ctrl.hooks[AfterCreate]; ok {
 		for _, entity := range entities {
-			hook(&entity, c)
+			err := hook(&entity, c)
+			if err != nil {
+				log.Println(err)
+				ctrl.Error(c, err.Error())
+				return
+			}
 		}
 	}
 
@@ -135,7 +155,12 @@ func (ctrl *Controller[E]) CreateOne(c *gin.Context) {
 	}
 
 	if hook, ok := ctrl.hooks[BeforeCreate]; ok {
-		hook(entity, c)
+		err := hook(entity, c)
+		if err != nil {
+			log.Println(err)
+			ctrl.Error(c, err.Error())
+			return
+		}
 	}
 
 	err := ctrl.repository.CreateOne(c, entity)
@@ -146,7 +171,12 @@ func (ctrl *Controller[E]) CreateOne(c *gin.Context) {
 	}
 
 	if hook, ok := ctrl.hooks[AfterCreate]; ok {
-		hook(entity, c)
+		err := hook(entity, c)
+		if err != nil {
+			log.Println(err)
+			ctrl.Error(c, err.Error())
+			return
+		}
 	}
 
 	ctrl.Success(c, fmt.Sprintf("%v record saved successfully", ctrl.name), entity)
@@ -183,7 +213,12 @@ func (ctrl *Controller[E]) CreateMany(c *gin.Context) {
 
 	if hook, ok := ctrl.hooks[BeforeCreate]; ok {
 		for _, entity := range entities {
-			hook(&entity, c)
+			err := hook(&entity, c)
+			if err != nil {
+				log.Println(err)
+				ctrl.Error(c, err.Error())
+				return
+			}
 		}
 	}
 
@@ -196,7 +231,12 @@ func (ctrl *Controller[E]) CreateMany(c *gin.Context) {
 
 	if hook, ok := ctrl.hooks[AfterCreate]; ok {
 		for _, entity := range entities {
-			hook(&entity, c)
+			err := hook(&entity, c)
+			if err != nil {
+				log.Println(err)
+				ctrl.Error(c, err.Error())
+				return
+			}
 		}
 	}
 
@@ -246,7 +286,12 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 	}
 
 	if hook, ok := ctrl.hooks[BeforeUpdate]; ok {
-		hook(entity, c)
+		err := hook(entity, c)
+		if err != nil {
+			log.Println(err)
+			ctrl.Error(c, err.Error())
+			return
+		}
 	}
 
 	err = ctrl.repository.UpdateOne(c, id, entity)
@@ -257,7 +302,12 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 	}
 
 	if hook, ok := ctrl.hooks[AfterUpdate]; ok {
-		hook(entity, c)
+		err := hook(entity, c)
+		if err != nil {
+			log.Println(err)
+			ctrl.Error(c, err.Error())
+			return
+		}
 	}
 
 	ctrl.Success(c, fmt.Sprintf("%v record updated successfully", ctrl.name), entity)
@@ -313,7 +363,12 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 
 	if hook, ok := ctrl.hooks[BeforeUpdate]; ok {
 		for _, entity := range entities {
-			hook(&entity, c)
+			err := hook(&entity, c)
+			if err != nil {
+				log.Println(err)
+				ctrl.Error(c, err.Error())
+				return
+			}
 		}
 	}
 
@@ -326,7 +381,12 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 
 	if hook, ok := ctrl.hooks[AfterUpdate]; ok {
 		for _, entity := range entities {
-			hook(&entity, c)
+			err := hook(&entity, c)
+			if err != nil {
+				log.Println(err)
+				ctrl.Error(c, err.Error())
+				return
+			}
 		}
 	}
 
@@ -392,7 +452,12 @@ func (ctrl *Controller[E]) DeleteOne(c *gin.Context) {
 	}
 
 	if hook, ok := ctrl.hooks[BeforeDelete]; ok {
-		hook(&entity, c)
+		err := hook(&entity, c)
+		if err != nil {
+			log.Println(err)
+			ctrl.Error(c, err.Error())
+			return
+		}
 	}
 
 	err = ctrl.repository.DeleteOne(c, id)
@@ -403,7 +468,12 @@ func (ctrl *Controller[E]) DeleteOne(c *gin.Context) {
 	}
 
 	if hook, ok := ctrl.hooks[AfterDelete]; ok {
-		hook(&entity, c)
+		err := hook(&entity, c)
+		if err != nil {
+			log.Println(err)
+			ctrl.Error(c, err.Error())
+			return
+		}
 	}
 
 	ctrl.Success(c, fmt.Sprintf("%v record removed successfully", ctrl.name), nil)
@@ -433,7 +503,12 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 
 	if hook, ok := ctrl.hooks[BeforeDelete]; ok {
 		for _, entity := range entities {
-			hook(&entity, c)
+			err := hook(&entity, c)
+			if err != nil {
+				log.Println(err)
+				ctrl.Error(c, err.Error())
+				return
+			}
 		}
 	}
 
@@ -446,7 +521,12 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 
 	if hook, ok := ctrl.hooks[AfterDelete]; ok {
 		for _, entity := range entities {
-			hook(&entity, c)
+			err := hook(&entity, c)
+			if err != nil {
+				log.Println(err)
+				ctrl.Error(c, err.Error())
+				return
+			}
 		}
 	}
 
