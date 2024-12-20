@@ -13,10 +13,10 @@ type Repository[E any] interface {
 	CreateMany(*gin.Context, ...E) error
 	UpdateOne(*gin.Context, string, *E) error
 	UpdateMany(*gin.Context, *E, any, ...any) error
-	FindOne(*gin.Context, string) (E, error)
-	FindMany(*gin.Context, any, ...any) ([]E, error)
-	FindAll(*gin.Context) ([]E, error)
-	FindManyWithLimit(*gin.Context, int, int, any, ...any) ([]E, error)
+	FindOne(*gin.Context, []string, string) (E, error)
+	FindMany(*gin.Context, []string, any, ...any) ([]E, error)
+	FindAll(*gin.Context, []string) ([]E, error)
+	FindManyWithLimit(*gin.Context, []string, int, int, any, ...any) ([]E, error)
 	DeleteOne(*gin.Context, string) error
 	DeleteMany(*gin.Context, any, ...any) error
 	Count(*gin.Context, any, ...any) (int64, error)

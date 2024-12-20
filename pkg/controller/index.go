@@ -30,6 +30,7 @@ type Controller[E any] struct {
 	name       string
 	plural     string
 	searchable []string
+	relations  []string
 	unique     func(*E) (any, []any)
 	morphs     map[string]func(*E, *gin.Context)
 	hooks      map[string]func(*E, *gin.Context) error
@@ -40,11 +41,12 @@ func NewController[E any](
 	name,
 	plural string,
 	searchable []string,
+	relations []string,
 	unique func(*E) (any, []any),
 	morphs map[string]func(*E, *gin.Context),
 	hooks map[string]func(*E, *gin.Context) error,
 ) *Controller[E] {
-	return &Controller[E]{&BaseController{}, repository, name, plural, searchable, unique, morphs, hooks}
+	return &Controller[E]{&BaseController{}, repository, name, plural, searchable, relations, unique, morphs, hooks}
 }
 
 func (ctrl *Controller[E]) UpsertOne(c *gin.Context) {
@@ -277,7 +279,7 @@ func (ctrl *Controller[E]) UpdateOne(c *gin.Context) {
 		return
 	}
 
-	_, err := ctrl.repository.FindOne(c, id)
+	_, err := ctrl.repository.FindOne(c, []string{}, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Println(err)
@@ -354,7 +356,7 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 	ids := strings.Split(id, "|")
 	var entities []E
 	for range ids {
-		existingEntity, err := ctrl.repository.FindOne(c, id)
+		existingEntity, err := ctrl.repository.FindOne(c, []string{}, id)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				log.Println(err)
@@ -449,7 +451,7 @@ func (ctrl *Controller[E]) FindOne(c *gin.Context) {
 		}
 	}
 
-	entity, err := ctrl.repository.FindOne(c, id)
+	entity, err := ctrl.repository.FindOne(c, ctrl.relations, id)
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -510,8 +512,6 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 
 	query, args := ctrl.buildQuery(c.Request.URL.Query())
 
-	log.Println(query, args)
-
 	total, err := ctrl.repository.Count(c, query, args...)
 	if err != nil {
 		log.Println(err)
@@ -530,7 +530,7 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 		prevPage = 0
 	}
 
-	entities, err := ctrl.repository.FindManyWithLimit(c, perPage, offset, query, args...)
+	entities, err := ctrl.repository.FindManyWithLimit(c, []string{}, perPage, offset, query, args...)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to retrieve %v record, try again in a bit", ctrl.name), 500)
@@ -568,7 +568,7 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 func (ctrl *Controller[E]) DeleteOne(c *gin.Context) {
 	id := c.Param("id")
 
-	entity, err := ctrl.repository.FindOne(c, id)
+	entity, err := ctrl.repository.FindOne(c, []string{}, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Println(err)
@@ -626,7 +626,7 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 
 	var entities []E
 	for _, id := range *ids {
-		entity, err := ctrl.repository.FindOne(c, id)
+		entity, err := ctrl.repository.FindOne(c, []string{}, id)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				log.Println(err)

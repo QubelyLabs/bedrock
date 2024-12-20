@@ -41,6 +41,11 @@ func InitSQL(host string, port int, user, password, name string) error {
 		return err
 	}
 
+	// Disable auto-saving associations globally
+	m.Callback().Create().Remove("gorm:save_before_associations")
+	m.Callback().Create().Remove("gorm:save_after_associations")
+	m.Callback().Create().Remove("gorm:delete_before_associations")
+
 	sql = m
 
 	return nil

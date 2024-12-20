@@ -8,18 +8,18 @@ import (
 )
 
 type Entity struct {
-	ID        string         `gorm:"primaryKey;column:id;type:string;size:36;not null" json:"id,omitempty"`
+	Id        string         `gorm:"primaryKey;column:id;type:string;size:36;not null" json:"id,omitempty"`
 	CreatedAt *time.Time     `gorm:"index;column:created_at;not null" json:"created_at,omitempty"`
 	UpdatedAt *time.Time     `gorm:"index;column:updated_at;not null;->:false;<-:create" json:"updated_at,omitempty"`
 	DeletedAt gorm.DeletedAt `gorm:"index;column:deleted_at;->:false;<-:create" json:"deleted_at,omitempty"`
 }
 
 func (e *Entity) BeforeCreate(tx *gorm.DB) error {
-	if e.ID != "" {
+	if e.Id != "" {
 		return nil
 	}
 
-	e.ID = uuid.New().String()
+	e.Id = uuid.New().String()
 	now := time.Now()
 	e.CreatedAt = &now
 	e.UpdatedAt = &now

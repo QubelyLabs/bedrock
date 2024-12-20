@@ -25,7 +25,7 @@ func (d *excelDocument) Validate(r io.Reader, headerValidator func(header []stri
 
 	excelFile, err := excel.OpenReader(r)
 	if err != nil {
-		log.Printf("Unable to read file", err)
+		log.Print("Unable to read file", err)
 		return false, "unable to read file"
 	}
 	defer excelFile.Close()
@@ -39,7 +39,7 @@ func (d *excelDocument) Validate(r io.Reader, headerValidator func(header []stri
 	d.len = 0
 	records, err := excelFile.GetRows(sheetName)
 	if err != nil {
-		log.Printf("Unable to read file", err)
+		log.Print("Unable to read file", err)
 		return false, "unable to read file"
 	}
 
