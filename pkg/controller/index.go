@@ -28,7 +28,7 @@ type Controller[E any] struct {
 	searchable []string
 	unique     func(*E) (any, []any)
 	morph      func(*E)
-	hooks      map[string]func(*E, *gin.Context)
+	hooks      map[string]func(*E, *gin.Context) error
 }
 
 func NewController[E any](
@@ -38,7 +38,7 @@ func NewController[E any](
 	searchable []string,
 	unique func(*E) (any, []any),
 	morph func(*E),
-	hooks map[string]func(*E, *gin.Context),
+	hooks map[string]func(*E, *gin.Context) error,
 ) *Controller[E] {
 	return &Controller[E]{&BaseController{}, repository, name, plural, searchable, unique, morph, hooks}
 }
@@ -273,7 +273,7 @@ func (ctrl *Controller[E]) UpdateMany(c *gin.Context) {
 
 	ids := strings.Split(id, "|")
 	var entities []E
-	for _, _ = range ids {
+	for range ids {
 		existingEntity, err := ctrl.repository.FindOne(c, id)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
@@ -414,7 +414,7 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 
 	ids := strings.Split(id, "|")
 	var entities []E
-	for _, _ = range ids {
+	for range ids {
 		entity, err := ctrl.repository.FindOne(c, id)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
