@@ -716,8 +716,6 @@ func (ctrl *Controller[E]) buildQuery(c *gin.Context) (string, []any) {
 		scopeQuery, scopeArgs = ctrl.scope(userId, workspaceId)
 	}
 
-	log.Println(queryParams, userId, workspaceId, scopeQuery, scopeArgs)
-
 	// Build the query, excluding specified keys
 	if len(queryParams) > 0 {
 		for key, values := range queryParams {
@@ -746,8 +744,6 @@ func (ctrl *Controller[E]) buildQuery(c *gin.Context) (string, []any) {
 			args = append(args, scopeArgs...)
 		}
 	}
-
-	log.Println(queryParts, joiner, args)
 
 	query := strings.Join(queryParts, " "+joiner+" ")
 	return query, args
