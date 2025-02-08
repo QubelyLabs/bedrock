@@ -3,12 +3,14 @@
 ## Bedrock
 
 ### Introduction
-A collection of reusable utilities for building APIs 
+
+A collection of reusable utilities for building APIs
 
 ### Usage
+
 ```bash
 # Published version
-go get github.com/QubelyLabs/bedrock
+go get github.com/QubelyLabs/bedrock@v1.0.4
 
 # Local development
 git clone github.com/QubelyLabs/bedrock
@@ -17,7 +19,9 @@ go get github.com/QubelyLabs/bedrock@v0.0.0-unpublished
 ```
 
 ### Structure
+
 1. `pkg` - reusables for config, dbs, repository controller etc
 
 ### TODO
+
 1. Add unit tests
