@@ -738,11 +738,11 @@ func (ctrl *Controller[E]) buildQuery(c *gin.Context) (string, []any) {
 				args = append(args, partArgs...)
 			}
 		}
-	} else {
-		if scopeQuery != "" {
-			queryParts = append(queryParts, scopeQuery)
-			args = append(args, scopeArgs...)
-		}
+	}
+
+	if len(queryParts) < 1 && scopeQuery != "" {
+		queryParts = append(queryParts, scopeQuery)
+		args = append(args, scopeArgs...)
 	}
 
 	query := strings.Join(queryParts, " "+joiner+" ")
