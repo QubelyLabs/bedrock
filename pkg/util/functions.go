@@ -160,7 +160,7 @@ func FromBase64String(str string) (string, error) {
 	return string(value), nil
 }
 
-// func getStringProperty(properties map[string]interface{}, key string) (string, error) {
+// func getStringProperty(properties map[string]any, key string) (string, error) {
 //     value, ok := properties[key]
 //     if !ok || value == "" {
 //         return "", &PropertyError{PropertyName: key}
@@ -172,7 +172,7 @@ func FromBase64String(str string) (string, error) {
 //     return strValue, nil
 // }
 
-// func getMapProperty(properties map[string]interface{}, key string) (map[string]util.Object, error) {
+// func getMapProperty(properties map[string]any, key string) (map[string]util.Object, error) {
 //     value, ok := properties[key]
 //     if !ok {
 //         return nil, &PropertyError{PropertyName: key}

@@ -7,7 +7,7 @@ import (
 )
 
 // Post sends a POST request with a JSON body
-func (s *request) Post(url string, body interface{}, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
+func (s *request) Post(url string, body any, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func (s *request) Get(url string, queries map[string]string, headers map[string]
 }
 
 // Patch sends a PATCH request with a JSON body
-func (s *request) Patch(url string, body interface{}, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
+func (s *request) Patch(url string, body any, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (s *request) Patch(url string, body interface{}, queries map[string]string,
 }
 
 // Put sends a PUT request with a JSON body
-func (s *request) Put(url string, body interface{}, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
+func (s *request) Put(url string, body any, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err

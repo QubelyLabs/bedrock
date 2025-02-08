@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/QubelyLabs/bedrock/pkg/contract"
+	"github.com/QubelyLabs/bedrock/pkg/injection"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -31,6 +31,7 @@ type Controller[E any] struct {
 	plural     string
 	searchable []string
 	relations  []string
+	scope      func(userId, workspaceId string) (string, []any)
 	unique     func(*E) (any, []any)
 	morphs     map[string]func(*E, *gin.Context)
 	hooks      map[string]func(*E, *gin.Context) error
@@ -42,11 +43,12 @@ func NewController[E any](
 	plural string,
 	searchable []string,
 	relations []string,
+	scope func(userId, workspaceId string) (string, []any),
 	unique func(*E) (any, []any),
 	morphs map[string]func(*E, *gin.Context),
 	hooks map[string]func(*E, *gin.Context) error,
 ) *Controller[E] {
-	return &Controller[E]{&BaseController{}, repository, name, plural, searchable, relations, unique, morphs, hooks}
+	return &Controller[E]{&BaseController{}, repository, name, plural, searchable, relations, scope, unique, morphs, hooks}
 }
 
 func (ctrl *Controller[E]) UpsertOne(c *gin.Context) {
@@ -482,7 +484,6 @@ func (ctrl *Controller[E]) FindOne(c *gin.Context) {
 }
 
 func (ctrl *Controller[E]) FindMany(c *gin.Context) {
-	log.Println(c.Query("firstname"), c.Request.Context(), c.Request.URL.Query(), c.Request.URL.Query(), "per_page")
 	pageStr := c.Query("page")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page <= 0 {
@@ -510,7 +511,7 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 		}
 	}
 
-	query, args := ctrl.buildQuery(c.Request.URL.Query())
+	query, args := ctrl.buildQuery(c)
 
 	total, err := ctrl.repository.Count(c, query, args...)
 	if err != nil {
@@ -530,7 +531,7 @@ func (ctrl *Controller[E]) FindMany(c *gin.Context) {
 		prevPage = 0
 	}
 
-	entities, err := ctrl.repository.FindManyWithLimit(c, []string{}, perPage, offset, query, args...)
+	entities, err := ctrl.repository.FindManyWithLimit(c, ctrl.relations, perPage, offset, query, args...)
 	if err != nil {
 		log.Println(err)
 		ctrl.ErrorWithCode(c, fmt.Sprintf("Unable to retrieve %v record, try again in a bit", ctrl.name), 500)
@@ -686,34 +687,67 @@ func (ctrl *Controller[E]) DeleteMany(c *gin.Context) {
 	ctrl.Success(c, fmt.Sprintf("%v records removed successfully", ctrl.name), nil)
 }
 
-func (ctrl *Controller[E]) buildQuery(queryParams url.Values) (string, []interface{}) {
+func (ctrl *Controller[E]) buildQuery(c *gin.Context) (string, []any) {
+	queryParams := c.Request.URL.Query()
+
 	var (
 		queryParts []string
-		args       []interface{}
+		args       []any
 	)
 
 	// Keys to exclude from the query
 	excludeKeys := []string{"page", "per_page"}
 
-	// Determine joiner ("and" or "or"), default to "and"
+	// Determine joiner ("and" or "or"), default to "or"
 	joiner := strings.ToUpper(queryParams.Get("joiner"))
-	if joiner != "OR" {
-		joiner = "AND"
+	if joiner != "AND" {
+		joiner = "OR"
 	}
+
+	user := injection.GetUser(c)
+	userId := user["id"].(string)
+
+	workspace := injection.GetWorkspace(c)
+	workspaceId := workspace["id"].(string)
+
+	scopeQuery, scopeArgs := "", []any{}
+
+	if ctrl.scope != nil {
+		scopeQuery, scopeArgs = ctrl.scope(userId, workspaceId)
+	}
+
+	log.Println(queryParams, userId, workspaceId, scopeQuery, scopeArgs)
 
 	// Build the query, excluding specified keys
-	for key, values := range queryParams {
-		// Skip excluded keys and "joiner" key
-		if ctrl.contains(excludeKeys, key) || key == "joiner" {
-			continue
-		}
+	if len(queryParams) > 0 {
+		for key, values := range queryParams {
+			// Skip excluded keys and "joiner" key
+			if ctrl.contains(excludeKeys, key) || key == "joiner" {
+				continue
+			}
 
-		if len(values) > 0 {
-			// Add condition for each parameter
-			queryParts = append(queryParts, fmt.Sprintf("%s = ?", key))
-			args = append(args, values[0]) // Add only the first value for simplicity
+			if len(values) > 0 {
+				// Add scope to each individual condition
+				condition := fmt.Sprintf("(%s = ?)", key)
+				partArgs := []any{values[0]}
+
+				if scopeQuery != "" {
+					condition = fmt.Sprintf("(%s AND %s)", condition, scopeQuery)
+					partArgs = append(partArgs, scopeArgs...)
+				}
+
+				queryParts = append(queryParts, condition)
+				args = append(args, partArgs...)
+			}
+		}
+	} else {
+		if scopeQuery != "" {
+			queryParts = append(queryParts, scopeQuery)
+			args = append(args, scopeArgs...)
 		}
 	}
+
+	log.Println(queryParts, joiner, args)
 
 	query := strings.Join(queryParts, " "+joiner+" ")
 	return query, args

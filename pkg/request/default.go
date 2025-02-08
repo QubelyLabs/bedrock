@@ -11,7 +11,7 @@ var (
 )
 
 // Post sends a POST request with a JSON body
-func Post(url string, body interface{}, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
+func Post(url string, body any, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func Get(url string, queries map[string]string, headers map[string]string, retry
 }
 
 // Patch sends a PATCH request with a JSON body
-func Patch(url string, body interface{}, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
+func Patch(url string, body any, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func Patch(url string, body interface{}, queries map[string]string, headers map[
 }
 
 // Put sends a PUT request with a JSON body
-func Put(url string, body interface{}, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
+func Put(url string, body any, queries map[string]string, headers map[string]string, retryCount int) (*HttpResponse, error) {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err

@@ -13,7 +13,7 @@ type Identify struct {
 	WorkspaceId string `json:"workspaceId"`
 }
 
-func (i *Identify) FromMap(data map[string]interface{}) error {
+func (i *Identify) FromMap(data map[string]any) error {
 	// marshal data to bytes
 	buf, err := json.Marshal(&data)
 	if err != nil {
@@ -37,7 +37,7 @@ type Track struct {
 	WorkspaceId string `json:"workspaceId"`
 }
 
-func (t *Track) FromMap(data map[string]interface{}) error {
+func (t *Track) FromMap(data map[string]any) error {
 	// marshal data to bytes
 	buf, err := json.Marshal(&data)
 	if err != nil {
