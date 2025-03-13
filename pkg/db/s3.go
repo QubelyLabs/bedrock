@@ -61,7 +61,7 @@ func Upload(bucketName string, objectName string, objectContent io.Reader, conte
 		encoding = "base64"
 	}
 
-	_, err = s3.PutObject(ctx, bucketName, objectName, objectContent, size, minio.PutObjectOptions{
+	_, err = s3.PutObject(ctx, bucketName, objectName, buf, size, minio.PutObjectOptions{
 		ContentType:     contentType,
 		ContentEncoding: encoding,
 	})

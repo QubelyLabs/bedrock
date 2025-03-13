@@ -10,7 +10,7 @@ A collection of reusable utilities for building APIs
 
 ```bash
 # Published version
-go get github.com/QubelyLabs/bedrock@v1.0.4
+go get github.com/QubelyLabs/bedrock@v1.0.6
 
 # Local development
 git clone github.com/QubelyLabs/bedrock
