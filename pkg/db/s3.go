@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -30,13 +31,18 @@ func S3() *minio.Client {
 	return s3
 }
 
-func Upload(bucketName string, objectName string, objectContent io.Reader, mimeType string, encoding string) error {
+func Upload(bucketName string, objectName string, objectContent io.Reader, contentType string, encoding string) error {
 	s3 := S3()
 	ctx := context.TODO()
-	err := s3.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: "us-east-1"})
+
+	exists, err := s3.BucketExists(ctx, bucketName)
 	if err != nil {
-		exists, errBucketExists := s3.BucketExists(ctx, bucketName)
-		if errBucketExists != nil || !exists {
+		return err
+	}
+
+	if !exists {
+		err := s3.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: "us-east-1"})
+		if err != nil {
 			return err
 		}
 	}
@@ -47,8 +53,8 @@ func Upload(bucketName string, objectName string, objectContent io.Reader, mimeT
 		return err
 	}
 
-	if mimeType == "" {
-		mimeType = "application/octet-stream"
+	if contentType == "" {
+		contentType = "application/octet-stream"
 	}
 
 	if encoding == "" {
@@ -56,7 +62,7 @@ func Upload(bucketName string, objectName string, objectContent io.Reader, mimeT
 	}
 
 	_, err = s3.PutObject(ctx, bucketName, objectName, objectContent, size, minio.PutObjectOptions{
-		ContentType:     mimeType,
+		ContentType:     contentType,
 		ContentEncoding: encoding,
 	})
 
@@ -67,18 +73,27 @@ func Upload(bucketName string, objectName string, objectContent io.Reader, mimeT
 	return nil
 }
 
-func Download(bucketName, objectName string) (string, error) {
+func Download(bucketName, objectName string) (string, string, error) {
 	object, err := s3.GetObject(context.Background(), bucketName, objectName, minio.GetObjectOptions{})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer object.Close()
 
-	var buffer bytes.Buffer
-	if _, err := io.Copy(&buffer, object); err != nil {
-		return "", err
+	// Read object metadata to get Content-Type
+	info, err := object.Stat()
+	if err != nil {
+		return "", "", err
 	}
+	contentType := info.ContentType
 
-	base64String := base64.StdEncoding.EncodeToString(buffer.Bytes())
-	return base64String, nil
+	// Read object data and encode it to base64
+	var buf strings.Builder
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	if _, err := io.Copy(encoder, object); err != nil {
+		return "", "", err
+	}
+	encoder.Close() // Ensure all data is flushed
+
+	return buf.String(), contentType, nil
 }
